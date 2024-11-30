@@ -34,48 +34,9 @@ def Hfun(landmark_x, landmark_y, mu_pred, z_hat):
 
 
 def filter_initialization(sys, initialStateMean, initialStateCov, filter_name):
-    if filter_name == 'EKF':
-        init.mu = initialStateMean
-        init.Sigma = initialStateCov
-        init.Gfun = Gfun
-        init.Vfun = Vfun
-        init.Hfun = Hfun
-        from filter.EKF_ROS import EKF_ROS
-        filter = EKF_ROS(sys, init)
-    
-    if filter_name == 'UKF':
-        init.mu = initialStateMean
-        init.Sigma = initialStateCov
-        init.kappa_g = 2
-        from filter.UKF_ROS import UKF_ROS
-        filter = UKF_ROS(sys, init)
-
-    if filter_name == 'PF':
-        init.mu = initialStateMean
-        init.Sigma = 0.001 * np.eye(3)
-        init.n = 500
-        init.particles = np.zeros((3, init.n))
-        init.particle_weight = np.zeros(init.n)
-        L = np.linalg.cholesky(init.Sigma) 
-        for i in range(init.n):
-            init.particles[:,i] = L @ rng.standard_normal((3,1)).reshape(3) + init.mu 
-            init.particle_weight[i] = 1/init.n
-        from filter.PF_ROS import PF_ROS
-        filter = PF_ROS(sys, init)
-        
-
-    if filter_name == "InEKF":
-        init.mu = np.eye(3)
-        init.mu[0,2] = initialStateMean[0]
-        init.mu[1,2] = initialStateMean[1]
-        init.Sigma = initialStateCov; # note: the covariance here is wrt lie algebra (not wrt Cartesian coordinate (x,y,theta))
-        from filter.InEKF_ROS import InEKF_ROS
-        filter = InEKF_ROS(sys, init)
-
-    if filter_name == 'test':
-        init.mu = initialStateMean
-        init.Sigma = initialStateCov
-        from filter.DummyFilter import DummyFilter
-        filter = DummyFilter(sys, init)
+    init.mu = initialStateMean
+    init.Sigma = initialStateCov
+    from filter.DummyFilter import DummyFilter
+    filter = DummyFilter(sys, init)
             
     return filter

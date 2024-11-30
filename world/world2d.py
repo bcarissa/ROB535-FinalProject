@@ -5,53 +5,60 @@ import numpy as np
 import pygame
 from os import path
 
-# from mdp import *
 from utils.Landmark import *
 
 class world2d:
 
     metadata = {"render_modes": ["human", "rgb_array", "ansi"], "render_fps": 24}
 
-    def __init__(self,height=20,width=30,grid_size=1.0):
-        self.height = height
-        self.width = width
+    def __init__(self,height=10,width=10,grid_size=1.0):
+        # self.height = height
+        # self.width = width
         self.grid_size = grid_size
 
-        self.rows = int(self.height+2 // self.grid_size)
+        self.rows = height
         print("rows w/ bounds:",self.rows)
-        self.cols = int(self.width+2 // self.grid_size)
+        self.cols = width
         print("cols w/ bounds:",self.cols)
         self.fence_grid = np.zeros((self.rows, self.cols), dtype=int)
+        self.obs_xy = []
+        self.obs_rowcol = []
+        self.path = []
 
-        for x in range(self.cols):
-            self.add_fence(x, 0)  
-            self.add_fence(x, self.rows - 1)
-
-        for y in range(self.rows):
-            self.add_fence(0, y)
-            self.add_fence(self.cols - 1,y)
-        
         self.cell_size = (60, 60)
         self.window_size = (
-            (self.cols-2) * self.cell_size[1], # x
-            (self.rows-1) * self.cell_size[0], # y
+            (self.cols) * self.cell_size[1], # x
+            (self.rows+1) * self.cell_size[0], # y
         )
         self.window_surface = None
         self.clock = None
         self.obs_imgs = None
         self.select_imgs = None
 
-        self.selectObs()          
+        self.selectObs()
 
-    def add_fence(self, grid_x, grid_y):
+    def add_fence(self, grid_y, grid_x):
         """Set a fence at the specified grid coordinates."""
         if 0 <= grid_x < self.cols and 0 <= grid_y < self.rows:
             self.fence_grid[grid_y, grid_x] = 1
+            print("adding(x,y):",[grid_x,grid_y])
+            self.obs_xy.append([grid_x,grid_y])
+            self.obs_rowcol.append([grid_y,grid_x])
 
-    def remove_fence(self, grid_x, grid_y):
+    def remove_fence(self, grid_y, grid_x):
         """Remove a fence at the specified grid coordinates."""
         if 0 <= grid_x < self.cols and 0 <= grid_y < self.rows:
-            self.fence_grid[grid_y, grid_x] = 0 
+            self.fence_grid[grid_y, grid_x] = 0
+            print("removing(x,y):",[grid_x,grid_y])
+            self.obs_xy.remove([grid_x,grid_y])
+            self.obs_rowcol.remove([grid_y,grid_x])
+
+
+    def add_mdp_path(self, grid_y, grid_x):
+        """Set a MDP path at the specified grid coordinates."""
+        if 0 <= grid_x < self.cols and 0 <= grid_y < self.rows:
+            self.fence_grid[grid_y, grid_x] = 2
+            print("MDP path(x,y):",[grid_x,grid_y])
     
     def print_grids(self):
         for y in range(-1,-(self.rows)-1,-1):
@@ -78,11 +85,11 @@ class world2d:
                 pygame.transform.scale(pygame.image.load(f_name), self.cell_size) for f_name in select
             ]
         
-        for column in range(self.width):
-            self.window_surface.blit(self.select_imgs[3], (column*self.cell_size[0],self.height*self.cell_size[1])) # label area
+        for column in range(self.cols):
+            self.window_surface.blit(self.select_imgs[3], (column*self.cell_size[0],self.rows*self.cell_size[1])) # label area
 
-        for p in range(self.height*self.width):
-            row, col = np.unravel_index(p, (self.height, self.width))
+        for p in range(self.rows*self.cols):
+            row, col = np.unravel_index(p, (self.rows, self.cols))
             pos = (col * self.cell_size[0], row * self.cell_size[1])
             self.window_surface.blit(self.select_imgs[0], pos)
 
@@ -100,15 +107,18 @@ class world2d:
                     pygame.quit()
 
                 if ev1.type == pygame.MOUSEBUTTONDOWN:
-                    row_sel = int(mouse[1] / self.cell_size[1])
                     col_sel = int(mouse[0] / self.cell_size[0])
-                    if row_sel == self.height: # exceed maximum
+                    row_sel = int(mouse[1] / self.cell_size[1])
+                    if row_sel == self.rows: # exceed maximum
                         print("finished")
                         flag = False
-                    else:
+                    elif not [(self.rows-1)-row_sel,col_sel] in self.obs_rowcol:
                         self.window_surface.blit(self.select_imgs[1], (col_sel*self.cell_size[0],row_sel * self.cell_size[1]))
-                        self.add_fence(col_sel+1,(self.rows-1)-(row_sel+1))
-                        print("adding(x,y):",(col_sel,(self.rows-1)-(row_sel+1)-1))                    
+                        self.add_fence((self.rows-1)-row_sel,col_sel)
+                    else:
+                        self.window_surface.blit(self.select_imgs[0], (col_sel*self.cell_size[0],row_sel * self.cell_size[1]))
+                        self.remove_fence((self.rows-1)-row_sel,col_sel)
+
 
             pygame.event.pump()
             pygame.display.update()

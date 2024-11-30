@@ -6,6 +6,7 @@ from visualization_msgs.msg import MarkerArray
 
 from world.world2d import *
 from utils.Landmark import *
+from system.RobotSystem import *
 
 class marker_publisher:
     def __init__(self, world):
@@ -36,19 +37,26 @@ class marker_publisher:
                 marker.scale.z = 0.1
 
                 marker.pose.orientation.w = 1.0
-                marker.pose.position.x = (x-1) * self.grid_size + self.grid_size / 2
-                marker.pose.position.y = (y-1) * self.grid_size + self.grid_size / 2
+                marker.pose.position.x = x * self.grid_size + self.grid_size / 2
+                marker.pose.position.y = y * self.grid_size + self.grid_size / 2
                 marker.pose.position.z = 0
 
                 if self.world.fence_grid[y, x] == 1:  # Fence present
                     marker.color.r = 1.0
                     marker.color.g = 0.0
                     marker.color.b = 0.0
+                    marker.color.a = 0.8
+                elif self.world.fence_grid[y, x] == 2:
+                    marker.color.r = 1.0
+                    marker.color.g = 1.0
+                    marker.color.b = 0.0
+                    path = self.world.path
+                    marker.color.a = (1-(path.index([y,x])/len(path)))*0.3+0.3
                 else:  # Empty grid
                     marker.color.r = 0.0
                     marker.color.g = 0.0
                     marker.color.b = 1.0
-                marker.color.a = 0.8  # Semi-transparent
+                    marker.color.a = 0.8
                 
                 markerArray.markers.append(marker)        
         self.pub.publish(markerArray)
