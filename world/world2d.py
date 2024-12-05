@@ -11,7 +11,7 @@ class world2d:
 
     metadata = {"render_modes": ["human", "rgb_array", "ansi"], "render_fps": 24}
 
-    def __init__(self,height=10,width=10,grid_size=1.0):
+    def __init__(self,height=10,width=10,grid_size=2.0):
         # self.height = height
         # self.width = width
         self.grid_size = grid_size
