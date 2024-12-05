@@ -226,31 +226,72 @@ class mdp(Env):
             print()
         print()
 
-    def generateContinuousPath(self):
+    def isTurn(self,idx):
+        # two points
         grid_size = self.robot.world.grid_size
-
-        point_last = self.start
-        idx = 0
-        while idx<len(self.robot.world.path):
-            # two points
+        if idx-1>=0:
+            point_last = self.robot.world.path[idx-1]
+            x_last = point_last[1] * grid_size + grid_size / 2
+            y_last = point_last[0] * grid_size + grid_size / 2
+        else:
+            point_last = self.robot.world.path[idx]
             x_last = point_last[1] * grid_size + grid_size / 2
             y_last = point_last[0] * grid_size + grid_size / 2
 
-            point = self.robot.world.path[idx]
-            x_curr = point[1] * grid_size + grid_size / 2
-            y_curr = point[0] * grid_size + grid_size / 2
+        point_curr = self.robot.world.path[idx]
+        x_curr = point_curr[1] * grid_size + grid_size / 2
+        y_curr = point_curr[0] * grid_size + grid_size / 2
 
-            # curr point, then points within, NO next point
-            distance = np.sqrt((x_curr - x_last)**2 + (y_curr - y_last)**2)
-            num_points = int(np.ceil(100 * distance)) # 100 point per unit
-            x_values = np.linspace(x_last, x_curr, num_points, endpoint=False)
-            y_values = np.linspace(y_last, y_curr, num_points, endpoint=False)
+        if idx+1<len(self.robot.world.path):
+            point_nxt = self.robot.world.path[idx+1]
+            x_nxt = point_nxt[1] * grid_size + grid_size / 2
+            y_nxt = point_nxt[0] * grid_size + grid_size / 2
+        else:
+            point_nxt = None
+            x_nxt = x_curr
+            y_nxt = y_curr
 
+        # curr point, then points within, NO next point
+        if idx-1>=0 and idx+1<len(self.robot.world.path) and ((y_curr - y_last != y_nxt - y_curr) or (x_curr - x_last != x_nxt - x_curr)):
+            print("turn!",idx)
+            return True,x_last,y_last,point_last,x_curr,y_curr,point_curr,x_nxt,y_nxt,point_nxt
+        return False,x_last,y_last,point_last,x_curr,y_curr,point_curr,x_nxt,y_nxt,point_nxt
+
+    def generateContinuousPath(self):
+        grid_size = self.robot.world.grid_size
+        # generated = [False for i in range(len(self.robot.world.path))]
+        startPoint = self.robot.world.path[0]
+        lastEnd = [startPoint[0] * grid_size + grid_size / 2,startPoint[1] * grid_size + grid_size / 2]
+        idx = 0
+        while idx<len(self.robot.world.path)-1:
+            turn,x_last,y_last,point_last,x_curr,y_curr,point_curr,x_nxt,y_nxt,point_nxt = self.isTurn(idx)
+            if not turn:
+                currEnd = [x_curr+(x_nxt - x_curr)/2.0,y_curr+(y_nxt - y_curr)/2.0]
+                distance = np.sqrt((currEnd[0] - lastEnd[0])**2 + (currEnd[1] - lastEnd[1])**2)
+                num_points = int(np.ceil(100 * distance)) # 100 point per unit
+                x_values = np.linspace(lastEnd[0], currEnd[0], num_points, endpoint=False)
+                y_values = np.linspace(lastEnd[1], currEnd[1], num_points, endpoint=False)
+                lastEnd = currEnd
+            else:
+                # turn part
+                num_points = 100
+                angles = np.linspace(0,0.5*np.pi,num_points,endpoint=False)
+                x_sign = np.sign (np.sign(point_curr[1]-point_last[1]) + np.sign(point_nxt[1] - point_curr[1]) )
+                y_sign = np.sign (np.sign(point_curr[0]-point_last[0]) + np.sign(point_nxt[0] - point_curr[0]) )
+                turnUpDown = True if (x_curr-x_last) and (y_nxt - y_curr) else False
+                print("updown:",turnUpDown)                
+                turn_start = [x_last+(x_curr - x_last)/2.0,y_last+(y_curr - y_last)/2.0]
+                print(turn_start,x_sign,y_sign)
+                x_values = turn_start[0]+x_sign*np.sin(angles)*0.5 if turnUpDown else turn_start[0]+x_sign*(1-np.cos(angles))*0.5
+                y_values = turn_start[1]+y_sign*(1-np.cos(angles))*0.5 if turnUpDown else turn_start[1]+y_sign*np.sin(angles)*0.5
+                lastEnd = [lastEnd[0]+(x_nxt - x_last)/2.0,lastEnd[1]+(y_nxt - y_last)/2.0]
+
+                
+
+            idx = idx+1
             for i in range(len(x_values)):
                 self.contiPath.append([x_values[i], y_values[i]])
 
-            point_last = point
-            idx = idx+1
 
 
 
@@ -261,6 +302,8 @@ class mdp(Env):
         print("-----------MDP-----------")
         print("start position:{}".format(self.start))
         steptime = 0
+
+        self.robot.world.path.append(self.start)
         self.robot.world.add_mdp_path(self.start[0],self.start[1])
         while True:
             print("step:{}----".format(steptime))
@@ -273,7 +316,7 @@ class mdp(Env):
         print("-----------MDP-----------")
         print()
         self.close()
-        print("MDP path obtained",self.robot.world.path)
+        print("MDP path obtained w/",str(len(self.robot.world.path)),"points:",self.robot.world.path)
         self.generateContinuousPath() 
 
 

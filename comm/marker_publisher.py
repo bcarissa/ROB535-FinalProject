@@ -52,8 +52,7 @@ class marker_publisher:
                     marker.color.g = 1.0
                     marker.color.b = 0.0
                     path = self.world.path
-                    # marker.color.a = (1-(path.index([y,x])/len(path)))*0.3+0.3
-                    marker.color.a = 0.3
+                    marker.color.a = (1-(path.index([y,x])/len(path)))*0.3+0.3
                 else:  # Empty grid
                     marker.color.r = 0.0
                     marker.color.g = 0.0

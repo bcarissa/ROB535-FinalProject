@@ -87,12 +87,16 @@ class RobotSystem:
     def plotPath(self):
         x = [self.MDPcore.contiPath[i][0] for i in range(len(self.MDPcore.contiPath))]
         y = [self.MDPcore.contiPath[i][1] for i in range(len(self.MDPcore.contiPath))]
-        plt.plot(x, y, marker='o', linestyle='-', color='b')
-        plt.title('continuous route')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.grid(True)
-        plt.show()    
+        fig, ax = plt.subplots()
+        ax.plot(x, y, marker='o', linestyle='-', color='b')   
+        ax.set_title('Continuous Route')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_aspect('equal')
+        ax.set_xticks(np.arange(min(x), max(x)+1, 1))  # x-axis grid at intervals of 1
+        ax.set_yticks(np.arange(min(y), max(y)+1, 1))
+        ax.grid(True)
+        plt.show()
 
     def run_filter(self):
         
@@ -112,7 +116,7 @@ class RobotSystem:
 
         # X, P, particles, particle_weight, mu, Sigma = 0 , 0 , 0 , 0 , 0 , 0
         # for t in range(self.num_step):
-        for t in range(10):
+        for t in range(4):
             
             # get data for current timestamp
             # motion_command = self.data['motionCommand'][t,:]
