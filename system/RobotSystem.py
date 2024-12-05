@@ -73,45 +73,46 @@ class RobotSystem:
 
         # self.num_step = np.shape(self.data['motionCommand'])[0]
 
-        self.pub = path_publisher()     # filter pose
-        self.cmd_pub = path_publisher() # theoratical command path
-        self.gt_pub = path_publisher()  # actual robot path
-        self.landmark_visualizer = marker_publisher(self.world)
+        # self.pub = path_publisher()     # filter pose
+        # self.cmd_pub = path_publisher() # theoratical command path
+        # self.gt_pub = path_publisher()  # actual robot path
+
+        self.target_pub = path_publisher()
+        self.targetGrid_visualizer = marker_publisher(self.world)
 
         self.loop_sleep_time = param['loop_sleep_time']
 
 
         
-
-    def runMDP(self):
-        g0 = 0
-        self.MDP_state=self.MDPcore.reset()
-        print("-----------MDP-----------")
-        print("start position:{}".format(self.MDPcore.start))
-        steptime = 0
-        while True:
-            print("step:{}----".format(steptime))
-            self.MDP_state,g0,done,info = self.MDPcore.step()
-            # self.MDPcore.render()
-            steptime+=1
-            if done:
-                break
-        print('cost:{}'.format(str(self.MDPcore.g0)))
-        print("-----------MDP-----------")
-        print()
-        self.MDPcore.close()
-
-        print(self.MDPcore.pastPath)
-        for point in self.MDPcore.pastPath:
-            self.world.add_mdp_path(point[0],point[1])
+    def plotPath(self):
+        x = [self.MDPcore.contiPath[i][0] for i in range(len(self.MDPcore.contiPath))]
+        y = [self.MDPcore.contiPath[i][1] for i in range(len(self.MDPcore.contiPath))]
+        plt.plot(x, y, marker='o', linestyle='-', color='b')
+        plt.title('continuous route')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.grid(True)
+        plt.show()    
 
     def run_filter(self):
         
-        self.runMDP()
+        self.MDPcore.runMDP()
+        self.plotPath()
+
         results = np.zeros((4,7))
+
+        for i in range(5):
+            # publish target grid
+            self.targetGrid_visualizer.publish_markers()
+            # publish target path
+            rospy.sleep(self.loop_sleep_time)
+        for i in range(len(self.MDPcore.contiPath)):
+            self.target_pub.publish_target_path(self.MDPcore.contiPath[i])
+
+
         # X, P, particles, particle_weight, mu, Sigma = 0 , 0 , 0 , 0 , 0 , 0
         # for t in range(self.num_step):
-        for t in range(4):
+        for t in range(10):
             
             # get data for current timestamp
             # motion_command = self.data['motionCommand'][t,:]
@@ -122,12 +123,8 @@ class RobotSystem:
             # self.state_ = self.filter_.getState()
             
             # publisher 
-            # self.pub.publish_pose(self.state_)            
-            # self.gt_pub.publish_gt_path(self.data['actual_state'][t])
-            # self.cmd_pub.publish_command_path(self.data['noise_free_state'][t])
 
-            # visualize landmarks
-            self.landmark_visualizer.publish_landmarks()
+
 
             rospy.sleep(self.loop_sleep_time)
 

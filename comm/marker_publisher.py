@@ -22,7 +22,7 @@ class marker_publisher:
         self.grid_size = self.world.grid_size
         self.pub = rospy.Publisher(marker_topic,MarkerArray,queue_size=10)
 
-    def publish_landmarks(self):
+    def publish_markers(self):
 
         markerArray = MarkerArray()
         for y in range(self.world.rows):
@@ -31,6 +31,7 @@ class marker_publisher:
                 marker.id = y * self.world.cols + x
                 marker.header.frame_id = self.frame_id
                 marker.type = marker.CUBE
+                marker.action = Marker.DELETE
                 marker.action = marker.ADD
                 marker.scale.x = self.grid_size
                 marker.scale.y = self.grid_size
@@ -51,7 +52,8 @@ class marker_publisher:
                     marker.color.g = 1.0
                     marker.color.b = 0.0
                     path = self.world.path
-                    marker.color.a = (1-(path.index([y,x])/len(path)))*0.3+0.3
+                    # marker.color.a = (1-(path.index([y,x])/len(path)))*0.3+0.3
+                    marker.color.a = 0.3
                 else:  # Empty grid
                     marker.color.r = 0.0
                     marker.color.g = 0.0
@@ -60,5 +62,8 @@ class marker_publisher:
                 
                 markerArray.markers.append(marker)        
         self.pub.publish(markerArray)
+
+        continuousRoute = None
+        return continuousRoute
 
 

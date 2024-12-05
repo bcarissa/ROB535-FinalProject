@@ -9,6 +9,7 @@ Panels:
         - /MarkerArray1
         - /PoseWithCovariance1/Status1
         - /PoseWithCovariance1/Covariance1
+        - /Path2
         - /Path2/Status1
         - /Marker1
         - /Marker1/Status1
@@ -63,7 +64,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 25; 255; 0
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -82,7 +83,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /command/path
       Unreliable: false
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /landmarks
@@ -130,8 +131,8 @@ Visualization Manager:
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
-      Line Style: Lines
-      Line Width: 0.029999999329447746
+      Line Style: Billboards
+      Line Width: 0.10000000149011612
       Name: Path
       Offset:
         X: 0
@@ -143,7 +144,7 @@ Visualization Manager:
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /groundtruth/path
+      Topic: /target/path
       Unreliable: false
       Value: true
     - Class: rviz/Marker
@@ -191,7 +192,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 162.77052307128906
+      Distance: 17.411924362182617
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -199,17 +200,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.10258028656244278
-        Y: 28.544475555419922
-        Z: -110.95446014404297
-      Focal Shape Fixed Size: true
+        X: 4.904767990112305
+        Y: 1.2964704036712646
+        Z: -0.20636628568172455
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.259796380996704
+      Pitch: 1.014797329902649
       Target Frame: map
-      Yaw: 4.703583717346191
+      Yaw: 4.733579635620117
     Saved: ~
 Window Geometry:
   Displays:
@@ -228,4 +229,4 @@ Window Geometry:
     collapsed: false
   Width: 1884
   X: 238
-  Y: 161
+  Y: 27

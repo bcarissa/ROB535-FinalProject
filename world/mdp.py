@@ -29,7 +29,7 @@ class mdp(Env):
         self.observation_space = spaces.Discrete(self.col*self.row)
         self.timeLengthMax = self.row*self.col
         self.g0 = 0
-        self.pastPath = []
+        self.contiPath = []
 
     def setStateReward(self,R,point:list,reward): # reward when stepping onto this point
         if (0 <= point[0]+1 < self.row and 0 <= point[1] < self.col):
@@ -185,8 +185,10 @@ class mdp(Env):
             g_curr = costBump
         self.g0 += g_curr
 
-        self.pastPath.append(self.MDP_state[0])
+        # self.pastPath.append(self.MDP_state[0])
         self.robot.world.path.append(self.MDP_state[0])
+        self.robot.world.add_mdp_path(self.MDP_state[0][0],self.MDP_state[0][1])
+
         self.timeLengthMax -= 1
 
         done = True if (self.timeLengthMax <= 0 or self.MDP_state[0]==self.end) else False
@@ -199,7 +201,7 @@ class mdp(Env):
         self.MDP_state[0] = [self.start[0], self.start[1]]
         self.MDP_state[1] = False
         self.g0 = 0
-        self.pastPath = []
+        self.contiPath = []
         self.robot.world.path = []
         self.timeLengthMax = self.row*self.col
 
@@ -223,4 +225,56 @@ class mdp(Env):
                     print(" o ",end='')
             print()
         print()
+
+    def generateContinuousPath(self):
+        grid_size = self.robot.world.grid_size
+
+        point_last = self.start
+        idx = 0
+        while idx<len(self.robot.world.path):
+            # two points
+            x_last = point_last[1] * grid_size + grid_size / 2
+            y_last = point_last[0] * grid_size + grid_size / 2
+
+            point = self.robot.world.path[idx]
+            x_curr = point[1] * grid_size + grid_size / 2
+            y_curr = point[0] * grid_size + grid_size / 2
+
+            # curr point, then points within, NO next point
+            distance = np.sqrt((x_curr - x_last)**2 + (y_curr - y_last)**2)
+            num_points = int(np.ceil(100 * distance)) # 100 point per unit
+            x_values = np.linspace(x_last, x_curr, num_points, endpoint=False)
+            y_values = np.linspace(y_last, y_curr, num_points, endpoint=False)
+
+            for i in range(len(x_values)):
+                self.contiPath.append([x_values[i], y_values[i]])
+
+            point_last = point
+            idx = idx+1
+
+
+
+
+    def runMDP(self):
+        g0 = 0
+        self.reset()
+        print("-----------MDP-----------")
+        print("start position:{}".format(self.start))
+        steptime = 0
+        self.robot.world.add_mdp_path(self.start[0],self.start[1])
+        while True:
+            print("step:{}----".format(steptime))
+            self.MDP_state,g0,done,info = self.step()
+            # self.render()
+            steptime+=1
+            if done:
+                break
+        print('cost:{}'.format(str(self.g0)))
+        print("-----------MDP-----------")
+        print()
+        self.close()
+        print("MDP path obtained",self.robot.world.path)
+        self.generateContinuousPath() 
+
+
 

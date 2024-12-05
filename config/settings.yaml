@@ -28,6 +28,8 @@ gt_path_topic: "groundtruth/path"
 command_path_topic: "command/path"
 ellipse_topic: "robot_state/nonlinear_cov"
 
+target_path_topic: "target/path"
+
 
 ### marker publisher ###
 landmark_topic: "landmarks"

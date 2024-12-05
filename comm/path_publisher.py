@@ -48,6 +48,10 @@ class path_publisher:
         self.cmd_path_pub = rospy.Publisher(command_path_topic,Path,queue_size=10)
         self.ellipse_pub = rospy.Publisher(ellipse_topic,Marker,queue_size=10)
 
+        # customize
+        target_path_topic = param['target_path_topic']
+        self.target_path_pub = rospy.Publisher(target_path_topic,Path,queue_size=10)
+
     def publish_pose(self, state):
 
         position = state.getPosition()
@@ -134,36 +138,11 @@ class path_publisher:
 
         return ellipse_line_msg
 
-
-    def publish_state_path(self, state):
-
-        position = state.getPosition()
-        orientation = state.getOrientation()
-
-        pose = PoseStamped()
-        pose.header.stamp = rospy.get_rostime()
-        pose.header.frame_id = self.path_frame
-        pose.pose.position.x = position[0]
-        pose.pose.position.y = position[1]
-
-        if self.world_dim == 2:
-            pose.pose.position.z = 0
-            rot = Rotation.from_euler('z',orientation,degrees=False)
-            quat = rot.as_quat()    # (x, y, z, w)
-            pose.pose.orientation.x = quat[0]
-            pose.pose.orientation.y = quat[1]
-            pose.pose.orientation.z = quat[2]
-            pose.pose.orientation.w = quat[3]
-
-        self.path.poses.append(pose)
-
-        self.path_pub.publish(self.path)
-
-    def publish_gt_path(self, data):
-
+    def publish_target_path(self,data):
+        # for idx, point in enumerate(data):
         x = data[0]
         y = data[1]
-        theta = data[2]
+        # theta = data[2]
 
         pose = PoseStamped()
         pose.header.stamp = rospy.get_rostime()
@@ -172,7 +151,7 @@ class path_publisher:
         pose.pose.position.y = y
 
         pose.pose.position.z = 0
-        rot = Rotation.from_euler('z',theta,degrees=False)
+        rot = Rotation.from_euler('z',0,degrees=False)
         quat = rot.as_quat()    # (x, y, z, w)
         pose.pose.orientation.x = quat[0]
         pose.pose.orientation.y = quat[1]
@@ -181,31 +160,7 @@ class path_publisher:
 
         self.path.poses.append(pose)
 
-        self.gt_path_pub.publish(self.path)
-
-    def publish_command_path(self,data):
-
-        x = data[0]
-        y = data[1]
-        theta = data[2]
-
-        pose = PoseStamped()
-        pose.header.stamp = rospy.get_rostime()
-        pose.header.frame_id = self.path_frame
-        pose.pose.position.x = x
-        pose.pose.position.y = y
-
-        pose.pose.position.z = 0
-        rot = Rotation.from_euler('z',theta,degrees=False)
-        quat = rot.as_quat()    # (x, y, z, w)
-        pose.pose.orientation.x = quat[0]
-        pose.pose.orientation.y = quat[1]
-        pose.pose.orientation.z = quat[2]
-        pose.pose.orientation.w = quat[3]
-
-        self.path.poses.append(pose)
-
-        self.cmd_path_pub.publish(self.path)
+        self.target_path_pub.publish(self.path)
 
 def main():
 
