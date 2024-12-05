@@ -263,9 +263,13 @@ class mdp(Env):
         startPoint = self.robot.world.path[0]
         lastEnd = [startPoint[0] * grid_size + grid_size / 2,startPoint[1] * grid_size + grid_size / 2]
         idx = 0
-        while idx<len(self.robot.world.path)-1:
+        while idx<len(self.robot.world.path):
+            if idx+1<len(self.robot.world.path):
+                turnNext,x_last,y_last,point_last,x_curr,y_curr,point_curr,x_nxt,y_nxt,point_nxt = self.isTurn(idx+1)
+            else:
+                turnNext = False
             turn,x_last,y_last,point_last,x_curr,y_curr,point_curr,x_nxt,y_nxt,point_nxt = self.isTurn(idx)
-            if not turn:
+            if (not turn) or (turn and turnNext):
                 currEnd = [x_curr+(x_nxt - x_curr)/2.0,y_curr+(y_nxt - y_curr)/2.0]
                 distance = np.sqrt((currEnd[0] - lastEnd[0])**2 + (currEnd[1] - lastEnd[1])**2)
                 num_points = int(np.ceil(100 * distance)) # 100 point per unit
