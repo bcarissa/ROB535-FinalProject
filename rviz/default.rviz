@@ -5,15 +5,13 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Grid1/Offset1
-        - /Path1/Status1
         - /MarkerArray1
         - /PoseWithCovariance1/Status1
         - /PoseWithCovariance1/Covariance1
+        - /Path1
         - /Path2
         - /Path2/Status1
-        - /Marker1
         - /Marker1/Status1
-        - /Axes1
       Splitter Ratio: 0.570588231086731
     Tree Height: 1193
   - Class: rviz/Selection
@@ -60,30 +58,6 @@ Visualization Manager:
       Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz/Path
-      Color: 25; 255; 0
-      Enabled: false
-      Head Diameter: 0.30000001192092896
-      Head Length: 0.20000000298023224
-      Length: 0.30000001192092896
-      Line Style: Lines
-      Line Width: 0.029999999329447746
-      Name: Path
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Queue Size: 10
-      Radius: 0.029999999329447746
-      Shaft Diameter: 0.10000000149011612
-      Shaft Length: 0.10000000149011612
-      Topic: /command/path
-      Unreliable: false
-      Value: false
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /landmarks
@@ -121,6 +95,30 @@ Visualization Manager:
       Shaft Radius: 4
       Shape: Arrow
       Topic: /robot_state/pose
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Billboards
+      Line Width: 10
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /mpc/path
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -192,7 +190,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 17.411924362182617
+      Distance: 16.935380935668945
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -200,17 +198,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 4.904767990112305
-        Y: 1.2964704036712646
-        Z: -0.20636628568172455
+        X: 5.203918933868408
+        Y: 3.1551387310028076
+        Z: 0.31330302357673645
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.014797329902649
+      Pitch: 1.3547970056533813
       Target Frame: map
-      Yaw: 4.733579635620117
+      Yaw: 4.7235822677612305
     Saved: ~
 Window Geometry:
   Displays:
@@ -228,5 +226,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1884
-  X: 238
-  Y: 27
+  X: 564
+  Y: 131

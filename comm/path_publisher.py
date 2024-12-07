@@ -51,6 +51,8 @@ class path_publisher:
         # customize
         target_path_topic = param['target_path_topic']
         self.target_path_pub = rospy.Publisher(target_path_topic,Path,queue_size=10)
+        mpc_path_topic = param['mpc_path_topic']
+        self.mpc_path_pub = rospy.Publisher(mpc_path_topic,Path,queue_size=10)
 
     def publish_pose(self, state):
 
@@ -161,6 +163,30 @@ class path_publisher:
         self.path.poses.append(pose)
 
         self.target_path_pub.publish(self.path)
+
+    def publish_mpc_path(self,data):
+        # for idx, point in enumerate(data):
+        x = data[0]
+        y = data[1]
+        # theta = data[2]
+
+        pose = PoseStamped()
+        pose.header.stamp = rospy.get_rostime()
+        pose.header.frame_id = self.path_frame
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+
+        pose.pose.position.z = 0
+        rot = Rotation.from_euler('z',0,degrees=False)
+        quat = rot.as_quat()    # (x, y, z, w)
+        pose.pose.orientation.x = quat[0]
+        pose.pose.orientation.y = quat[1]
+        pose.pose.orientation.z = quat[2]
+        pose.pose.orientation.w = quat[3]
+
+        self.path.poses.append(pose)
+
+        self.mpc_path_pub.publish(self.path)
 
 def main():
 

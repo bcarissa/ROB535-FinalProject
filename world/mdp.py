@@ -1,5 +1,6 @@
 from gym import Env,spaces
 import numpy as np
+import math
 import mdptoolbox
 
 np.set_printoptions(threshold=np.inf)
@@ -10,7 +11,7 @@ costScan = 4
 costBump = 5
 
 class mdp(Env):
-    def __init__(self,robot):
+    def __init__(self,robot,dt):
         self.robot = robot
         self.col = self.robot.world.cols
         self.row = self.robot.world.rows
@@ -29,7 +30,15 @@ class mdp(Env):
         self.observation_space = spaces.Discrete(self.col*self.row)
         self.timeLengthMax = self.row*self.col
         self.g0 = 0
+
         self.contiPath = []
+        self.mpcTargets = []
+        self.dt = dt
+
+    def setStart(self,start):
+        self.start = start
+    def setEnd(self,end):
+        self.end = end
 
     def setStateReward(self,R,point:list,reward): # reward when stepping onto this point
         if (0 <= point[0]+1 < self.row and 0 <= point[1] < self.col):
@@ -296,9 +305,34 @@ class mdp(Env):
             for i in range(len(x_values)):
                 self.contiPath.append([x_values[i], y_values[i]])
 
+    def generateMPCStates(self):
+        lastYaw = 0
 
+        num_points = len(self.contiPath)
+        for i in range(num_points):
+            x, y = self.contiPath[i]
+            
+            if i < num_points - 1:  # For all points except the last
+                next_x, next_y = self.contiPath[i + 1]
+                # Calculate the yaw angle between current and next point
+                yaw_angle = math.atan2(next_y - y, next_x - x)
+            else:  # For the last point, use the yaw angle of the second-to-last point
+                if num_points > 1:  # Ensure there are at least two points
+                    prev_x, prev_y = self.contiPath[i - 1]
+                    yaw_angle = math.atan2(y - prev_y, x - prev_x)
+                else:  # If there's only one point, set yaw_angle to 0
+                    yaw_angle = 0
+            
+            yaw_rate = (yaw_angle-lastYaw)/self.dt
+            
+            if not i:
+                acc = 4
+            else:
+                acc = 4-2*np.clip(yaw_rate/100.0, 1, 1)
 
+            lastYaw = yaw_angle
 
+            self.mpcTargets.append([x, y, yaw_angle, acc])
 
     def runMDP(self):
         g0 = 0
@@ -321,7 +355,8 @@ class mdp(Env):
         print()
         self.close()
         print("MDP path obtained w/",str(len(self.robot.world.path)),"points:",self.robot.world.path)
-        self.generateContinuousPath() 
+        self.generateContinuousPath()
+        self.generateMPCStates()
 
 
 

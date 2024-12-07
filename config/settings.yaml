@@ -29,9 +29,18 @@ command_path_topic: "command/path"
 ellipse_topic: "robot_state/nonlinear_cov"
 
 target_path_topic: "target/path"
+mpc_path_topic: "mpc/path"
 
 
 ### marker publisher ###
 landmark_topic: "landmarks"
 marker_frame_id: "map"
 loop_sleep_time: 0.1
+
+### MPC ###
+h: 0.05
+T: 15.
+L_f : 1.
+L_r: 1. 
+a_lim: [-10.0, 4.]
+delta_lim: [-0.8, 0.8]
