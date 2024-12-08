@@ -34,9 +34,9 @@ class mdp(Env):
         self.contiPath = []
         self.mpcTargets = []
         self.dt = dt
-        self.velocity = 3 # sampling mpc reference state
+        self.velocity = 3
         self.mpcControls = []
-        
+
     def setStart(self,start):
         self.start = start
     def setEnd(self,end):
@@ -158,8 +158,6 @@ class mdp(Env):
         """print area"""
         return (P, R)
     
-        
-
     def step(self):
         g_curr = 0
         self.MDP_state[1] = False
@@ -205,8 +203,6 @@ class mdp(Env):
         done = True if (self.timeLengthMax <= 0 or self.MDP_state[0]==self.end) else False
         info = {}
         return self.MDP_state, self.g0, done, info
-
-
 
     def reset(self):
         self.MDP_state[0] = [self.start[0], self.start[1]]
@@ -307,40 +303,37 @@ class mdp(Env):
             for i in range(len(x_values)):
                 self.contiPath.append([x_values[i], y_values[i]])
 
-    # def generateMPCStates(self):
-    #     lastYaw = 0
-
-    #     num_points = len(self.contiPath)
-    #     for i in range(num_points):
-    #         x, y = self.contiPath[i]
-            
-    #         if i < num_points - 1:  # For all points except the last
-    #             next_x, next_y = self.contiPath[i + 1]
-    #             # Calculate the yaw angle between current and next point
-    #             yaw_angle = math.atan2(next_y - y, next_x - x)
-    #         else:  # For the last point, use the yaw angle of the second-to-last point
-    #             if num_points > 1:  # Ensure there are at least two points       
-    #                 prev_x, prev_y = self.contiPath[i - 1]
-    #                 yaw_angle = math.atan2(y - prev_y, x - prev_x)
-    #             else:  # If there's only one point, set yaw_angle to 0
-    #                 yaw_angle = 0
-            
-    #         yaw_rate = (yaw_angle-lastYaw)/self.dt
-            
-    #         if not i:
-    #             acc = 4
-    #         else:
-    #             # acc = 4-2*np.clip(yaw_rate/100.0, 1, 1)
-    #             acc = 0.1
-
-    #         lastYaw = yaw_angle
-
-    #         self.mpcTargets.append([x, y, yaw_angle, acc])
-
-
     def generateMPCStates(self):
+        # lastYaw = 0
+
+        # num_points = len(self.contiPath)
+        # for i in range(num_points):
+        #     x, y = self.contiPath[i]
+            
+        #     if i < num_points - 1:  # For all points except the last
+        #         next_x, next_y = self.contiPath[i + 1]
+        #         # Calculate the yaw angle between current and next point
+        #         yaw_angle = math.atan2(next_y - y, next_x - x)
+        #     else:  # For the last point, use the yaw angle of the second-to-last point
+        #         if num_points > 1:  # Ensure there are at least two points
+        #             prev_x, prev_y = self.contiPath[i - 1]
+        #             yaw_angle = math.atan2(y - prev_y, x - prev_x)
+        #         else:  # If there's only one point, set yaw_angle to 0
+        #             yaw_angle = 0
+            
+        #     yaw_rate = (yaw_angle-lastYaw)/self.dt
+            
+        #     if not i:
+        #         acc = 4
+        #     else:
+        #         # acc = 4-2*np.clip(yaw_rate/100.0, 1, 1)
+        #         acc = 0.1
+
+        #     lastYaw = yaw_angle
+
+        #     self.mpcTargets.append([x, y, yaw_angle, acc])
         """
-        从连续路径 contiPath 采样生成适用于 MPC 的状态序列和控制输入序列。
+        从连续路径 contiPath 采样生成适用于 MPC 的状态序列。
 
         参数:
             contiPath: 连续路径 (list of [x, y])
@@ -348,10 +341,8 @@ class mdp(Env):
             velocity: 恒定速度 (float, m/s)。
 
         返回:
-            mpcTargets: 离散状态序列 (list of [x, y, psi, v])
-            mpcControls: 离散控制输入序列 (list of [a, delta])
+            mpcTargets: 离散状态序列 (list of [x, y, psi, a])
         """
-        # 清空目标状态和控制列表
         self.mpcTargets = []
         self.mpcControls = []
 
@@ -421,32 +412,6 @@ class mdp(Env):
         self.saveMPCPath("path.txt")
         self.saveMPCControls("controls.txt")
 
-
-    def runMDP(self):
-        g0 = 0
-        self.reset()
-        print("-----------MDP-----------")
-        print("start position:{}".format(self.start))
-        steptime = 0
-
-        self.robot.world.path.append(self.start)
-        self.robot.world.add_mdp_path(self.start[0],self.start[1])
-        while True:
-            print("step:{}----".format(steptime))
-            self.MDP_state,g0,done,info = self.step()
-            # self.render()
-            steptime+=1
-            if done:
-                break
-        print('cost:{}'.format(str(self.g0)))
-        print("-----------MDP-----------")
-        print()
-        self.close()
-        print("MDP path obtained w/",str(len(self.robot.world.path)),"points:",self.robot.world.path)
-        self.generateContinuousPath()
-        self.generateMPCStates()
-
-
     def saveMPCPath(self, filename="path.txt"):
         """
         将 mpcTargets 输出为 path.txt 文件。
@@ -479,6 +444,30 @@ class mdp(Env):
             print(f"MPC ref-controls successfully saved to {filename}")
         except Exception as e:
             print(f"Error saving MPC path: {e}")
+            
+    def runMDP(self):
+        g0 = 0
+        self.reset()
+        print("-----------MDP-----------")
+        print("start position:{}".format(self.start))
+        steptime = 0
+
+        self.robot.world.path.append(self.start)
+        self.robot.world.add_mdp_path(self.start[0],self.start[1])
+        while True:
+            print("step:{}----".format(steptime))
+            self.MDP_state,g0,done,info = self.step()
+            # self.render()
+            steptime+=1
+            if done:
+                break
+        print('cost:{}'.format(str(self.g0)))
+        print("-----------MDP-----------")
+        print()
+        self.close()
+        print("MDP path obtained w/",str(len(self.robot.world.path)),"points:",self.robot.world.path)
+        self.generateContinuousPath()
+        self.generateMPCStates()
 
 
 

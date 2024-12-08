@@ -16,6 +16,7 @@ from utils.filter_initialization import filter_initialization
 from utils.system_initialization import system_initialization
 from utils.utils import *
 from mpc.MPC_Controller import *
+from mpc.cmpc_utils import *
 
 class RobotSystem:
     
@@ -40,9 +41,11 @@ class RobotSystem:
             print("Plase provide a world!")
         
         # MDP --------------------------------------------------------
-        self.start = [0,0] # delete this and just state? # y,x
+        self.start = self.world.start # delete this and just state? # y,x
         # self.start_xy = [0,0]
-        self.end = [self.world.rows-1,self.world.cols-1] # y,x / row,col
+        # self.end = [self.world.rows-1,self.world.cols-1] # y,x / row,col
+        self.end = self.world.end
+
         if self.start in self.world.obs_rowcol:
             self.world.remove_fence(self.start[0],self.start[1])
         if self.end in self.world.obs_rowcol:
@@ -131,35 +134,36 @@ class RobotSystem:
         self.plotPath()
         print("plotting grid route...")
         
-        # for i in range(5):
+        for i in range(5):
             # publish target grid
-            # self.targetGrid_visualizer.publish_markers()
-            # rospy.sleep(self.loop_sleep_time)
-
+            self.targetGrid_visualizer.publish_markers()
+            rospy.sleep(self.loop_sleep_time)
+        
         # publish target path
         # print("publishing continuous target path...")
         # for i in range(len(self.MDPcore.contiPath)):
-            # self.target_pub.publish_target_path(self.MDPcore.contiPath[i])
+        #     self.target_pub.publish_target_path(self.MDPcore.contiPath[i])
+        #     rospy.sleep(self.loop_sleep_time)
+
+        # print("init MPC...")
+        # x_bar = np.array(self.MDPcore.mpcTargets)  # 轨迹的状态序列 (每个状态为4维)
+        # u_bar = np.zeros((len(x_bar), 2))  # 初始化控制输入（假设为2维：加速度和方向盘角度）
+        # 假设x0是机器人当前位置
+        # self.x_last = [self.MDPcore.mpcTargets[0][0], self.MDPcore.mpcTargets[0][1], self.MDPcore.mpcTargets[0][2], 0]
+        # print("loop run MPC...")
+        # for i in range(10):
+            # print("time ",0.1*i)
+            # 使用MPC计算控制输入
+            # u_act = self.MPC_controller.CMPC_Controller( x_bar, u_bar, self.x_last)
+            # 执行控制输入并更新状态
+            # x_curr = self.MPC_controller.apply_control(u_act, self.x_last)
+            # self.mpc_result.append(x_curr)
+            # self.mpc_pub.publish_mpc_path(x_curr[0:2])
+            # self.x_last = x_curr
             # rospy.sleep(self.loop_sleep_time)
 
-        print("init MPC...")
-        x_bar = np.array(self.MDPcore.mpcTargets)  # 轨迹的状态序列 (每个状态为4维)
-        u_bar = np.zeros((len(x_bar), 2))  # 初始化控制输入（假设为2维：加速度和方向盘角度）
-        # 假设x0是机器人当前位置
-        self.x_last = [self.MDPcore.mpcTargets[0][0], self.MDPcore.mpcTargets[0][1], self.MDPcore.mpcTargets[0][2], 0]
-        print("loop run MPC...")
-        for i in range(10):
-            print("time ",0.1*i)
-            # 使用MPC计算控制输入
-            u_act = self.MPC_controller.CMPC_Controller( x_bar, u_bar, self.x_last)
-            # 执行控制输入并更新状态
-            x_curr = self.MPC_controller.apply_control(u_act, self.x_last)
-            self.mpc_result.append(x_curr)
-            # self.mpc_pub.publish_mpc_path(x_curr[0:2])
-            self.x_last = x_curr
-            rospy.sleep(self.loop_sleep_time)
 
-        self.plotTargetResult()
+        # self.plotTargetResult()
 
     
     #maybe we can define more specific function to output each step or prediction or correction

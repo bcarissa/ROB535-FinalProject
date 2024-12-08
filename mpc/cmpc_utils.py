@@ -49,9 +49,10 @@ class BicycleSim:
 
         return x_log, u_log
     
-    def GenRef(self, alpha, beta):
+    def GenRef(self, alpha, beta, start_x):
         # generate a nominal trajectory
         x_bar = np.zeros((self.Ns + 1, self.Dim_state))
+        x_bar[0] = start_x
         u_bar = np.zeros((self.Ns    , self.Dim_ctrl))
 
         for k in range(self.Ns):

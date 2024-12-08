@@ -42,12 +42,12 @@ class marker_publisher:
                 marker.pose.position.y = y * self.grid_size + self.grid_size / 2
                 marker.pose.position.z = 0
 
-                if self.world.fence_grid[y, x] == 1:  # Fence present
+                if self.world.fence_grid[y][x] == 1:  # Fence present
                     marker.color.r = 1.0
                     marker.color.g = 0.0
                     marker.color.b = 0.0
                     marker.color.a = 0.8
-                elif self.world.fence_grid[y, x] == 2:
+                elif self.world.fence_grid[y][x] == 2:
                     marker.color.r = 1.0
                     marker.color.g = 1.0
                     marker.color.b = 0.0
