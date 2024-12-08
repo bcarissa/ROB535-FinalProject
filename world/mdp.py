@@ -328,7 +328,8 @@ class mdp(Env):
             if not i:
                 acc = 4
             else:
-                acc = 4-2*np.clip(yaw_rate/100.0, 1, 1)
+                # acc = 4-2*np.clip(yaw_rate/100.0, 1, 1)
+                acc = 0.1
 
             lastYaw = yaw_angle
 
