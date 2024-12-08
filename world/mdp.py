@@ -318,7 +318,7 @@ class mdp(Env):
     #             # Calculate the yaw angle between current and next point
     #             yaw_angle = math.atan2(next_y - y, next_x - x)
     #         else:  # For the last point, use the yaw angle of the second-to-last point
-    #             if num_points > 1:  # Ensure there are at least two points
+    #             if num_points > 1:  # Ensure there are at least two points       
     #                 prev_x, prev_y = self.contiPath[i - 1]
     #                 yaw_angle = math.atan2(y - prev_y, x - prev_x)
     #             else:  # If there's only one point, set yaw_angle to 0
@@ -344,48 +344,74 @@ class mdp(Env):
         参数:
             contiPath: 连续路径 (list of [x, y])
             dt: 时间步长 (float, seconds)
-            velocity: 恒定速度 (float, 可选, m/s)。如果为 None,则根据路径点计算速度。
+            velocity: 恒定速度 (float, m/s)。
 
         返回:
-            states: 离散状态序列 (list of [x, y, psi, v])
+            mpcTargets: 离散状态序列 (list of [x, y, psi, a])
         """
-        total_distance = 0.0  # 路径累计距离
-        for i in range(len(self.contiPath) - 1):
+        # 清空目标状态列表
+        self.mpcTargets = []
+
+        # 起始点
+        total_distance = 0.0  # 累计路径长度
+        last_v = self.velocity if self.velocity else 0.0  # 初始速度
+
+        # 确保速度已定义
+        if self.velocity is None:
+            raise ValueError("Velocity must be provided for fixed interval sampling.")
+
+        # 固定的采样间隔
+        step_distance = self.dt * self.velocity  # 每个时间步的距离
+
+        # 添加起始点到目标状态列表
+        start_x, start_y = self.contiPath[0]
+        self.mpcTargets.append([start_x, start_y, 0.0, 0.0])  # 初始加速度为 0
+
+        # 当前点初始化为起始点
+        current_x, current_y = start_x, start_y
+        current_idx = 0
+
+        # 推进采样
+        while current_idx < len(self.contiPath) - 1:
             # 当前点和下一点
-            x1, y1 = self.contiPath[i]
-            x2, y2 = self.contiPath[i + 1]
+            next_x, next_y = self.contiPath[current_idx + 1]
 
-            # 计算距离和方向
-            distance = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-            psi = np.arctan2(y2 - y1, x2 - x1)
-            total_distance += distance
+            # 计算当前点到下一点的距离和方向
+            segment_distance = np.sqrt((next_x - current_x)**2 + (next_y - current_y)**2)
+            psi = np.arctan2(next_y - current_y, next_x - current_x)
 
-            # 如果提供了恒定速度
-            if self.velocity is not None:
-                v = self.velocity
+            if total_distance + segment_distance >= step_distance:
+                # 插值计算采样点
+                remaining_distance = step_distance - total_distance
+                alpha = remaining_distance / segment_distance
+                new_x = current_x + alpha * (next_x - current_x)
+                new_y = current_y + alpha * (next_y - current_y)
+
+                # 计算加速度 (假设恒定速度，没有动态变化)
+                a = 0.0  # 恒速时加速度为 0
+
+                # 添加采样点到目标
+                self.mpcTargets.append([new_x, new_y, psi, a])
+
+                # 更新当前点为插值后的点
+                current_x, current_y = new_x, new_y
+
+                # 重置累计距离
+                total_distance = 0.0
             else:
-                # 根据两点距离和时间间隔计算速度
-                v = distance / self.dt if distance > 0 else 0.0
+                # 如果当前段不足以满足步长，累积距离并移动到下一段
+                total_distance += segment_distance
+                current_x, current_y = next_x, next_y
+                current_idx += 1
 
-            # 添加当前状态到状态序列
-            self.mpcTargets.append([x1, y1, psi, v])
-
-            # 检查是否需要跳过点以符合采样时间间隔
-            while total_distance >= self.dt * v:
-                # 插值计算新的采样点
-                alpha = (self.dt * v) / total_distance  # 插值因子
-                new_x = x1 + alpha * (x2 - x1)
-                new_y = y1 + alpha * (y2 - y1)
-
-                # 添加新状态
-                self.mpcTargets.append([new_x, new_y, psi, v])
-
-                # 减去已处理的距离
-                total_distance -= self.dt * v
-
-        # 添加最后一个点
+        # 添加最后一点（确保完整覆盖路径）
         final_x, final_y = self.contiPath[-1]
-        self.mpcTargets([final_x, final_y, psi, 0])  # 最后一段速度为 0
+        psi = np.arctan2(final_y - current_y, final_x - current_x) if len(self.contiPath) > 1 else 0
+        self.mpcTargets.append([final_x, final_y, psi, 0.0])  # 最后一段加速度为 0
+
+        # 保存路径
+        self.saveMPCPath("path.txt")
+
 
     def runMDP(self):
         g0 = 0
@@ -410,6 +436,23 @@ class mdp(Env):
         print("MDP path obtained w/",str(len(self.robot.world.path)),"points:",self.robot.world.path)
         self.generateContinuousPath()
         self.generateMPCStates()
+
+
+    def saveMPCPath(self, filename="path.txt"):
+        """
+        将 mpcTargets 输出为 path.txt 文件。
+
+        参数:
+            filename: 文件名 (str)，默认为 "path.txt"。
+        """
+        try:
+            with open(filename, "w") as file:
+                for target in self.mpcTargets:
+                    # 将状态写入文件，每个状态占一行
+                    file.write(f"{target[0]:.6f}, {target[1]:.6f}, {target[2]:.6f}, {target[3]:.6f}\n")
+            print(f"MPC path successfully saved to {filename}")
+        except Exception as e:
+            print(f"Error saving MPC path: {e}")
 
 
 
