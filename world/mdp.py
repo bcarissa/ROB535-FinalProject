@@ -34,6 +34,7 @@ class mdp(Env):
         self.contiPath = []
         self.mpcTargets = []
         self.dt = dt
+        self.velocity = 3 # sampling mpc reference state
 
     def setStart(self,start):
         self.start = start
@@ -305,35 +306,86 @@ class mdp(Env):
             for i in range(len(x_values)):
                 self.contiPath.append([x_values[i], y_values[i]])
 
+    # def generateMPCStates(self):
+    #     lastYaw = 0
+
+    #     num_points = len(self.contiPath)
+    #     for i in range(num_points):
+    #         x, y = self.contiPath[i]
+            
+    #         if i < num_points - 1:  # For all points except the last
+    #             next_x, next_y = self.contiPath[i + 1]
+    #             # Calculate the yaw angle between current and next point
+    #             yaw_angle = math.atan2(next_y - y, next_x - x)
+    #         else:  # For the last point, use the yaw angle of the second-to-last point
+    #             if num_points > 1:  # Ensure there are at least two points
+    #                 prev_x, prev_y = self.contiPath[i - 1]
+    #                 yaw_angle = math.atan2(y - prev_y, x - prev_x)
+    #             else:  # If there's only one point, set yaw_angle to 0
+    #                 yaw_angle = 0
+            
+    #         yaw_rate = (yaw_angle-lastYaw)/self.dt
+            
+    #         if not i:
+    #             acc = 4
+    #         else:
+    #             # acc = 4-2*np.clip(yaw_rate/100.0, 1, 1)
+    #             acc = 0.1
+
+    #         lastYaw = yaw_angle
+
+    #         self.mpcTargets.append([x, y, yaw_angle, acc])
+
+
     def generateMPCStates(self):
-        lastYaw = 0
+        """
+        从连续路径 contiPath 采样生成适用于 MPC 的状态序列。
 
-        num_points = len(self.contiPath)
-        for i in range(num_points):
-            x, y = self.contiPath[i]
-            
-            if i < num_points - 1:  # For all points except the last
-                next_x, next_y = self.contiPath[i + 1]
-                # Calculate the yaw angle between current and next point
-                yaw_angle = math.atan2(next_y - y, next_x - x)
-            else:  # For the last point, use the yaw angle of the second-to-last point
-                if num_points > 1:  # Ensure there are at least two points
-                    prev_x, prev_y = self.contiPath[i - 1]
-                    yaw_angle = math.atan2(y - prev_y, x - prev_x)
-                else:  # If there's only one point, set yaw_angle to 0
-                    yaw_angle = 0
-            
-            yaw_rate = (yaw_angle-lastYaw)/self.dt
-            
-            if not i:
-                acc = 4
+        参数:
+            contiPath: 连续路径 (list of [x, y])
+            dt: 时间步长 (float, seconds)
+            velocity: 恒定速度 (float, 可选, m/s)。如果为 None,则根据路径点计算速度。
+
+        返回:
+            states: 离散状态序列 (list of [x, y, psi, v])
+        """
+        total_distance = 0.0  # 路径累计距离
+        for i in range(len(self.contiPath) - 1):
+            # 当前点和下一点
+            x1, y1 = self.contiPath[i]
+            x2, y2 = self.contiPath[i + 1]
+
+            # 计算距离和方向
+            distance = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+            psi = np.arctan2(y2 - y1, x2 - x1)
+            total_distance += distance
+
+            # 如果提供了恒定速度
+            if self.velocity is not None:
+                v = self.velocity
             else:
-                # acc = 4-2*np.clip(yaw_rate/100.0, 1, 1)
-                acc = 0.1
+                # 根据两点距离和时间间隔计算速度
+                v = distance / self.dt if distance > 0 else 0.0
 
-            lastYaw = yaw_angle
+            # 添加当前状态到状态序列
+            self.mpcTargets.append([x1, y1, psi, v])
 
-            self.mpcTargets.append([x, y, yaw_angle, acc])
+            # 检查是否需要跳过点以符合采样时间间隔
+            while total_distance >= self.dt * v:
+                # 插值计算新的采样点
+                alpha = (self.dt * v) / total_distance  # 插值因子
+                new_x = x1 + alpha * (x2 - x1)
+                new_y = y1 + alpha * (y2 - y1)
+
+                # 添加新状态
+                self.mpcTargets.append([new_x, new_y, psi, v])
+
+                # 减去已处理的距离
+                total_distance -= self.dt * v
+
+        # 添加最后一个点
+        final_x, final_y = self.contiPath[-1]
+        self.mpcTargets([final_x, final_y, psi, 0])  # 最后一段速度为 0
 
     def runMDP(self):
         g0 = 0
