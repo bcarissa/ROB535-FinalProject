@@ -146,7 +146,7 @@ class RobotSystem:
         x_bar = np.array(self.MDPcore.mpcTargets)  # 轨迹的状态序列 (每个状态为4维)
         u_bar = np.zeros((len(x_bar), 2))  # 初始化控制输入（假设为2维：加速度和方向盘角度）
         # 假设x0是机器人当前位置
-        self.x_last = [self.MDPcore.mpcTargets[0][0], self.MDPcore.mpcTargets[0][1], self.MDPcore.mpcTargets[0][2], 2]
+        self.x_last = [self.MDPcore.mpcTargets[0][0], self.MDPcore.mpcTargets[0][1], self.MDPcore.mpcTargets[0][2], 0]
         print("loop run MPC...")
         for i in range(10):
             print("time ",0.1*i)
