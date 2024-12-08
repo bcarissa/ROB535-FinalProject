@@ -15,7 +15,7 @@ alphas_sqrt: [0.00025, 0.00005, 0.0025, 0.0005, 0.0025, 0.0005]
 beta: 5 # approx 5 deg.
 
 # init state
-deltaT: 0.1
+deltaT: 0.05
 initial_state: [0,0]
 initial_state_variance: [1, 1] 
 
@@ -35,7 +35,7 @@ mpc_path_topic: "mpc/path"
 ### marker publisher ###
 landmark_topic: "landmarks"
 marker_frame_id: "map"
-loop_sleep_time: 0.1
+loop_sleep_time: 0.05
 
 ### MPC ###
 h: 0.05

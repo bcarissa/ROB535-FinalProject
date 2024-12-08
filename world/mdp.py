@@ -35,7 +35,8 @@ class mdp(Env):
         self.mpcTargets = []
         self.dt = dt
         self.velocity = 3 # sampling mpc reference state
-
+        self.mpcControls = []
+        
     def setStart(self,start):
         self.start = start
     def setEnd(self,end):
@@ -339,7 +340,7 @@ class mdp(Env):
 
     def generateMPCStates(self):
         """
-        从连续路径 contiPath 采样生成适用于 MPC 的状态序列。
+        从连续路径 contiPath 采样生成适用于 MPC 的状态序列和控制输入序列。
 
         参数:
             contiPath: 连续路径 (list of [x, y])
@@ -347,14 +348,17 @@ class mdp(Env):
             velocity: 恒定速度 (float, m/s)。
 
         返回:
-            mpcTargets: 离散状态序列 (list of [x, y, psi, a])
+            mpcTargets: 离散状态序列 (list of [x, y, psi, v])
+            mpcControls: 离散控制输入序列 (list of [a, delta])
         """
-        # 清空目标状态列表
+        # 清空目标状态和控制列表
         self.mpcTargets = []
+        self.mpcControls = []
 
         # 起始点
         total_distance = 0.0  # 累计路径长度
-        last_v = self.velocity if self.velocity else 0.0  # 初始速度
+        current_velocity = self.velocity if self.velocity else 0.0  # 初始速度
+        last_psi = 0.0  # 初始航向角
 
         # 确保速度已定义
         if self.velocity is None:
@@ -365,7 +369,7 @@ class mdp(Env):
 
         # 添加起始点到目标状态列表
         start_x, start_y = self.contiPath[0]
-        self.mpcTargets.append([start_x, start_y, 0.0, 0.0])  # 初始加速度为 0
+        self.mpcTargets.append([start_x, start_y, 0.0, self.velocity])  # 初始速度为恒定速度
 
         # 当前点初始化为起始点
         current_x, current_y = start_x, start_y
@@ -387,14 +391,17 @@ class mdp(Env):
                 new_x = current_x + alpha * (next_x - current_x)
                 new_y = current_y + alpha * (next_y - current_y)
 
-                # 计算加速度 (假设恒定速度，没有动态变化)
-                a = 0.0  # 恒速时加速度为 0
+                # 计算控制输入
+                delta = (psi - last_psi) / self.dt  # 转向角变化
+                a = 0.0  # 恒定速度下加速度为 0
 
-                # 添加采样点到目标
-                self.mpcTargets.append([new_x, new_y, psi, a])
+                # 添加采样点到目标状态和控制输入列表
+                self.mpcTargets.append([new_x, new_y, psi, self.velocity])
+                self.mpcControls.append([a, delta])
 
                 # 更新当前点为插值后的点
                 current_x, current_y = new_x, new_y
+                last_psi = psi
 
                 # 重置累计距离
                 total_distance = 0.0
@@ -407,10 +414,12 @@ class mdp(Env):
         # 添加最后一点（确保完整覆盖路径）
         final_x, final_y = self.contiPath[-1]
         psi = np.arctan2(final_y - current_y, final_x - current_x) if len(self.contiPath) > 1 else 0
-        self.mpcTargets.append([final_x, final_y, psi, 0.0])  # 最后一段加速度为 0
+        self.mpcTargets.append([final_x, final_y, psi, self.velocity])  # 最后一段速度为恒定速度
+        self.mpcControls.append([0.0, 0.0])  # 最后一段无控制输入变化
 
-        # 保存路径
+        # 保存路径和控制输入
         self.saveMPCPath("path.txt")
+        self.saveMPCControls("controls.txt")
 
 
     def runMDP(self):
@@ -451,6 +460,23 @@ class mdp(Env):
                     # 将状态写入文件，每个状态占一行
                     file.write(f"{target[0]:.6f}, {target[1]:.6f}, {target[2]:.6f}, {target[3]:.6f}\n")
             print(f"MPC path successfully saved to {filename}")
+        except Exception as e:
+            print(f"Error saving MPC path: {e}")
+
+
+    def saveMPCControls(self, filename="controls.txt"):
+        """
+        将 mpcTargets 输出为 controls.txt 文件。
+
+        参数:
+            filename: 文件名 (str)，默认为 "controls.txt"。
+        """
+        try:
+            with open(filename, "w") as file:
+                for target in self.mpcControls:
+                    # 将状态写入文件，每个状态占一行
+                    file.write(f"{target[0]:.6f}, {target[1]:.6f}\n")
+            print(f"MPC ref-controls successfully saved to {filename}")
         except Exception as e:
             print(f"Error saving MPC path: {e}")
 
