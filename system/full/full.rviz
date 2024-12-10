@@ -44,7 +44,7 @@ Visualization Manager:
       Cell Size: 1
       Class: rviz/Grid
       Color: 160; 160; 164
-      Enabled: false
+      Enabled: true
       Line Style:
         Line Width: 0.029999999329447746
         Value: Lines
@@ -57,7 +57,7 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /landmarks
@@ -106,7 +106,7 @@ Visualization Manager:
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Billboards
-      Line Width: 0.30000001192092896
+      Line Width: 0.20000000298023224
       Name: Path
       Offset:
         X: 0
@@ -130,7 +130,7 @@ Visualization Manager:
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Billboards
-      Line Width: 0.5
+      Line Width: 0.10000000149011612
       Name: Path
       Offset:
         X: 0
@@ -190,7 +190,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 70.41680908203125
+      Distance: 18.09307098388672
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -198,17 +198,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 40.356727600097656
-        Y: 46.32931900024414
-        Z: 8.020681381225586
+        X: 2.7177958488464355
+        Y: 3.4869043827056885
+        Z: 1.6092427968978882
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9103981256484985
+      Pitch: 1.0853983163833618
       Target Frame: map
-      Yaw: 5.028590202331543
+      Yaw: 4.773585319519043
     Saved: ~
 Window Geometry:
   Displays:

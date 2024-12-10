@@ -14,7 +14,7 @@ class BicycleSim:
         self.a_lim = param["a_lim"]
         self.delta_lim = param["delta_lim"]
                 
-        self.Ns = int(np.ceil(self.T / self.h))
+        self.Ns = int(np.ceil(self.T / self.h)) -1
     
     def Fun_dynamics_dt(self, x, u):
 
@@ -43,26 +43,57 @@ class BicycleSim:
         for k in range(self.Ns):
             
             u_act = controller(x_bar_ext[k:k+preview+1, :], u_bar_ext[k:k+preview, :], x_log[k, :])
-
+            # print(k)
             x_log[k + 1, :] = np.squeeze(self.Fun_dynamics_dt(x_log[k, :],   u_act))
             u_log[k, :]     = np.squeeze(u_act)
+            
+            # print("x_log.shape", x_log.shape)
+            # print("u_log.shape", u_log.shape)
+            # print("u_bar.shape", u_bar.shape)
+            # print("x_bar.shape", x_bar.shape)
 
         return x_log, u_log
     
-    def GenRef(self, alpha, beta, start_x):
+    # def GenRef(self, alpha, beta):
+    #     # generate a nominal trajectory
+    #     x_bar = np.zeros((self.Ns + 1, self.Dim_state))
+    #     u_bar = np.zeros((self.Ns    , self.Dim_ctrl))
+
+    #     for k in range(self.Ns):
+    #         u_act = np.array([ - 1 * (x_bar[k, 3] - 8 + 10 * np.sin(k / 20) + np.sin(k / np.sqrt(7)) ), 
+    #                            np.cos(k / 10 / alpha) * 0.5 + 0.5 * np.sin(k / 10 / np.sqrt(beta))])
+
+    #         u_act[0] = np.clip(u_act[0],  self.a_lim[0], self.a_lim[1])
+    #         u_act[1] = np.clip(u_act[1],  self.delta_lim[0], self.delta_lim[1])
+            
+    #         u_bar[k, :]     = np.squeeze(u_act)
+    #         x_bar[k + 1, :] = np.squeeze(self.Fun_dynamics_dt(x_bar[k, :],   u_act))
+            
+    #     print("u_bar.shape", u_bar.shape)
+    #     print("x_bar.shape", x_bar.shape)
+    #     print("self.ns",self.Ns)
+    #     return u_bar, x_bar
+    
+    def GenRef(self):
         # generate a nominal trajectory
-        x_bar = np.zeros((self.Ns + 1, self.Dim_state))
-        x_bar[0] = start_x
-        u_bar = np.zeros((self.Ns    , self.Dim_ctrl))
+        # 加载路径文件
+        x_bar = []
+        with open("system/path.txt", "r") as f:
+            for line in f:
+                # 每行格式为: x, y, psi, v
+                values = list(map(float, line.strip().split(",")))
+                x_bar.append(values)
+        x_bar = np.array(x_bar)  # 转换为 NumPy 数组
 
-        for k in range(self.Ns):
-            u_act = np.array([ - 1 * (x_bar[k, 3] - 8 + 10 * np.sin(k / 20) + np.sin(k / np.sqrt(7)) ), 
-                               np.cos(k / 10 / alpha) * 0.5 + 0.5 * np.sin(k / 10 / np.sqrt(beta))])
-
-            u_act[0] = np.clip(u_act[0],  self.a_lim[0], self.a_lim[1])
-            u_act[1] = np.clip(u_act[1],  self.delta_lim[0], self.delta_lim[1])
-            
-            u_bar[k, :]     = np.squeeze(u_act)
-            x_bar[k + 1, :] = np.squeeze(self.Fun_dynamics_dt(x_bar[k, :],   u_act))
-            
+        # 加载控制输入文件
+        u_bar = []
+        with open("system/controls.txt", "r") as f:
+            for line in f:
+                # 每行格式为: a, delta
+                values = list(map(float, line.strip().split(",")))
+                u_bar.append(values)
+        u_bar = np.array(u_bar)  # 转换为 NumPy 数组
+        print("u_bar.shape",u_bar.shape)
+        print("x_bar.shape", x_bar.shape)
+        print("self.ns",self.Ns)
         return u_bar, x_bar

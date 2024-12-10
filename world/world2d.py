@@ -2,21 +2,22 @@ import sys
 sys.path.append('.')
 import numpy as np
 from PIL import Image
-
+import random
 import pygame
 from os import path
-
+from scipy.ndimage import binary_erosion
 from utils.Landmark import *
 
 class world2d:
 
     metadata = {"render_modes": ["human", "rgb_array", "ansi"], "render_fps": 24}
 
-    def __init__(self,height=10,width=10,grid_size=1.0):
-        binary_image = Image.open("world/output_binary_100-1.png").convert("L") 
-        binary_matrix = ((np.array(binary_image)/255).astype(int));print(binary_matrix)
-        height, width = binary_matrix.shape
-        length = max(height,width)      
+    def __init__(self,height=20,width=20,grid_size=1.0):
+        # binary_image = Image.open("world/output_binary_100-1.png").convert("L") 
+        # binary_matrix = ((np.array(binary_image)/255).astype(int)) # ;print(binary_matrix)
+        # height, width = binary_matrix.shape
+        # length = max(height,width) 
+        length = 10     
         
         # self.height = height
         # self.width = width
@@ -26,17 +27,21 @@ class world2d:
         self.rows = length;print("rows w/ bounds:",self.rows)
         self.cols = length;print("cols w/ bounds:",self.cols)
         self.fence_grid = np.zeros((self.rows, self.cols), dtype=int)
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if binary_matrix[r,c]==0:
-                    self.add_fence(self.rows-1-r,c)
-        print(self.fence_grid)
+        # for r in range(self.rows):
+        #     for c in range(self.cols):
+        #         if binary_matrix[r,c]==0:
+        #             self.add_fence(self.rows-1-r,c)
+        # print(self.fence_grid);print()
+        # self.fence_grid = self.hollow_obstacles(self.fence_grid)
+        # print(self.fence_grid)
         
-        
-        self.start = None;self.end = None
+        # self.start = [int((self.rows-1)/random.uniform(int(self.rows/5), self.rows)),int((self.cols-1)/random.uniform(1, max(int(self.cols/5),1)))]
+        self.start = [0,0]
+        # self.end = [int((self.rows-1)/random.uniform(int(self.rows/5), self.rows)),int((self.cols-1)/random.uniform(1, max(int(self.cols/5),1)))]
+        self.end = [self.rows-1,self.cols-1]
         self.path = []
 
-        self.cell_size = (15, 15)
+        self.cell_size = (60, 60)
         self.window_size = (
             (self.cols) * self.cell_size[1], # x
             (self.rows+1) * self.cell_size[0], # y
@@ -46,10 +51,14 @@ class world2d:
         self.obs_imgs = None
         self.select_imgs = None
 
-        # self.selectObs()
-        self.selectStart()
-        self.selectEnd()
+        self.selectObs()
+        # self.selectStart()
+        # self.selectEnd()
         
+    def hollow_obstacles(self,map_array):
+        eroded_map = binary_erosion(map_array, structure=np.ones((3, 3))).astype(int)
+        hollow_map = map_array - eroded_map
+        return hollow_map
 
     def add_fence(self, grid_y, grid_x):
         """Set a fence at the specified grid coordinates."""
@@ -190,7 +199,7 @@ class world2d:
                     if not [(self.rows-1)-row_sel,col_sel] in self.obs_rowcol:
                         self.start = [(self.rows-1)-row_sel,col_sel]
                         self.window_surface.blit(self.select_imgs[2], (col_sel*self.cell_size[0],row_sel * self.cell_size[1]))
-                        print("selected")
+                        print("selected ",self.start)
                         notSelected = False
                     else:
                         print("cannot start on obs!",[(self.rows-1)-row_sel,col_sel])
@@ -250,7 +259,7 @@ class world2d:
                     if not (([(self.rows-1)-row_sel,col_sel] in self.obs_rowcol) or ([(self.rows-1)-row_sel,col_sel] == self.start)) :
                         self.end = [(self.rows-1)-row_sel,col_sel]
                         self.window_surface.blit(self.select_imgs[2], (col_sel*self.cell_size[0],row_sel * self.cell_size[1]))
-                        print("selected")
+                        print("selected ",self.end)
                         notSelected = False
                     else:
                         print("cannot start on obs or start!!",[(self.rows-1)-row_sel,col_sel])

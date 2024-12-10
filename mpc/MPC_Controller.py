@@ -68,8 +68,8 @@ class MPC_Controller:
         
         # define the parameters
         Q = np.eye(4)  * 1
-        R = np.eye(2)  * 0.3
-        Pt = np.eye(4) * 100
+        R = np.eye(2)  * 0.00001
+        Pt = np.eye(4) * 2 
         
         # define the cost function
         P = np.zeros((n_var, n_var))
@@ -113,11 +113,50 @@ class MPC_Controller:
                         ])
         prob.solve(verbose=False, max_iter = 10000)
         u_act = x.value[n_x:n_x + dim_ctrl] + u_bar[0, :]
+        
+    #     delta_s = cp.Variable((dim_state, len_state))  # State variables over time
+    #     delta_u = cp.Variable((dim_ctrl, len_ctrl))    # Control variables over time
+    #     t = cp.Variable()
+    #     M = cp.Variable((2, 2), symmetric=True)
+        
+    #     # define the parameters
+    #     Q = np.array([
+    #         [1, 0, 0, 0],
+    #         [0, 1, 0, 0],
+    #         [0, 0, 1, 0],
+    #         [0, 0, 0, 1],
+    #     ])
+    #     R = np.eye(2) * 0.00001
+    #     Pt = np.eye(4) * 2 # Terminal Cost
+        
+    # # Define the cost function
+    #     cost = cp.quad_form(delta_s[:, -1] - x_bar[-1], Pt)  # Terminal cost
+    #     for i in range(len_ctrl):
+    #         cost += cp.quad_form(delta_s[:, i] - x_bar[i], Q)  # State deviation cost
+    #         cost += cp.quad_form(delta_u[:, i] - u_bar[i], R)  # Control deviation cost
+            
+    #     # Define constraints
+    #     constraints = [delta_s[:, 0] == x0]  # Initial condition
 
+    #     for i in range(len_ctrl):
+    #         # Get system dynamics matrices A_k, B_k (you need a function to calculate these)
+    #         A_k, B_k = self.calc_Jacobian(x_bar[i], u_bar[i], param)
+
+    #         # Dynamic constraint: x(k+1) = A_k * x(k) + B_k * u(k)
+    #         constraints = [M >> 0]
+    #         constraints += [(delta_s[:, i+1] - x_bar[i+1]) == A_k @ (delta_s[:, i] - x_bar[i]) + B_k @ (delta_u[:, i] - u_bar[i])]
+    #         # Input constraints: acceleration and steering limits
+    #         constraints.append(delta_u[0, i] >= a_limit[0])  # Lower bound on acceleration
+    #         constraints.append(delta_u[0, i] <= a_limit[1])  # Upper bound on acceleration
+    #         constraints.append(delta_u[1, i] >= delta_limit[0])  # Lower bound on steering angle
+    #         constraints.append(delta_u[1, i] <= delta_limit[1])  # Upper bound on steering angle
+
+    #     prob = cp.Problem(cp.Minimize(cost), constraints)
+    #     prob.solve(verbose=False, max_iter=10000)
+    #     u_act = delta_u[:, 0].value
         #############################################################################
         #                            END OF YOUR CODE                               #
         #############################################################################
-        
         return u_act
     
     def apply_control(self, u_act, state_):

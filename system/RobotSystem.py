@@ -36,7 +36,7 @@ class RobotSystem:
         # load world and landmarks
         if world is not None:
             self.world = world
-            self.world.print_grids()
+            # self.world.print_grids()
         else:
             print("Plase provide a world!")
         
@@ -64,10 +64,44 @@ class RobotSystem:
 
         
     def plotPath(self):
+        # x = [self.MDPcore.mpcTargets[i][0] for i in range(len(self.MDPcore.mpcTargets))]
+        # y = [self.MDPcore.mpcTargets[i][1] for i in range(len(self.MDPcore.mpcTargets))]
+        # yaw = [self.MDPcore.mpcTargets[i][2] for i in range(len(self.MDPcore.mpcTargets))]
+        # t = [0.1*i for i in range(len(self.MDPcore.mpcTargets))]
+        x = [self.MDPcore.contiPath[i][0] for i in range(len(self.MDPcore.contiPath))]
+        y = [self.MDPcore.contiPath[i][1] for i in range(len(self.MDPcore.contiPath))]
+        # yaw = [self.MDPcore.contiPath[i][2] for i in range(len(self.MDPcore.contiPath))]
+        t = [0.1*i for i in range(len(self.MDPcore.contiPath))]
+        
+        fig, axes = plt.subplots(2, 1, figsize=(8, 6))
+        axes = axes.flatten()
+        ax = axes[0]
+        ax.plot(x, y, marker='o', linestyle='-', color='b')   
+        ax.set_title('Continuous Route')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_aspect('equal')
+        ax.set_xticks(np.arange(min(x), max(x)+1, 1))  # x-axis grid at intervals of 1
+        ax.set_yticks(np.arange(min(y), max(y)+1, 1))
+        ax.grid(True)
+
+        # ax = axes[1]
+        # ax.plot(t,yaw, linestyle='-', color='r')   
+        # ax.set_title('yaw states')
+        # # ax.set_xlabel('X')
+        # ax.set_ylabel('yaw angle')
+        # ax.grid(True)
+        # plt.show()
+
+    def plotMDPPath(self):
         x = [self.MDPcore.mpcTargets[i][0] for i in range(len(self.MDPcore.mpcTargets))]
         y = [self.MDPcore.mpcTargets[i][1] for i in range(len(self.MDPcore.mpcTargets))]
         yaw = [self.MDPcore.mpcTargets[i][2] for i in range(len(self.MDPcore.mpcTargets))]
         t = [0.1*i for i in range(len(self.MDPcore.mpcTargets))]
+        # x = [self.MDPcore.contiPath[i][0] for i in range(len(self.MDPcore.contiPath))]
+        # y = [self.MDPcore.contiPath[i][1] for i in range(len(self.MDPcore.contiPath))]
+        # yaw = [self.MDPcore.contiPath[i][2] for i in range(len(self.MDPcore.contiPath))]
+        # t = [0.1*i for i in range(len(self.MDPcore.contiPath))]
         
         fig, axes = plt.subplots(2, 1, figsize=(8, 6))
         axes = axes.flatten()
@@ -131,19 +165,20 @@ class RobotSystem:
         print("running MDP...")
         self.MDPcore.runMDP()
         print("showing route plot...")
-        self.plotPath()
+        # self.plotPath()
+        self.plotMDPPath()
         print("plotting grid route...")
         
-        for i in range(5):
-            # publish target grid
+        # publish target grid
+        for i in range(4):
             self.targetGrid_visualizer.publish_markers()
             rospy.sleep(self.loop_sleep_time)
         
         # publish target path
-        # print("publishing continuous target path...")
-        # for i in range(len(self.MDPcore.contiPath)):
-        #     self.target_pub.publish_target_path(self.MDPcore.contiPath[i])
-        #     rospy.sleep(self.loop_sleep_time)
+        print("publishing continuous target path...")
+        for i in range(len(self.MDPcore.contiPath)):
+            self.target_pub.publish_target_path(self.MDPcore.contiPath[i])
+            # rospy.sleep(self.loop_sleep_time)
 
         # print("init MPC...")
         # x_bar = np.array(self.MDPcore.mpcTargets)  # 轨迹的状态序列 (每个状态为4维)
@@ -161,12 +196,121 @@ class RobotSystem:
             # self.mpc_pub.publish_mpc_path(x_curr[0:2])
             # self.x_last = x_curr
             # rospy.sleep(self.loop_sleep_time)
-
-
+        
         # self.plotTargetResult()
 
     
-    #maybe we can define more specific function to output each step or prediction or correction
+    def plot_res(self):
+        param = {
+            "h":0.05,
+            "T":9.5,
+            "L_f": 1.,
+            "L_r":1.,
+            "a_lim": [-10.0, 10.],
+            "delta_lim": [-1.5, 1.5]
+        }
+        Sim = BicycleSim(param)
+        u_bar, x_bar = Sim.GenRef()
+        T = len(x_bar)*0.05
+        param = {
+            "h":0.05,
+            "T":T,
+            "L_f": 1.,
+            "L_r":1.,
+            "a_lim": [-10.0, 10.],
+            "delta_lim": [-1.5, 1.5],
+            "x_obs": 49.5,
+            "y_obs": 59.5,
+        }
+        Sim = BicycleSim(param)
+        u_bar, x_bar = Sim.GenRef()
+
+        preview = 20
+        x0 = np.array(x_bar[0]) # [x, y, theta, v], x 0-5, y 0-5, theta 0-0.6*pi, v 0-5
+        controller = lambda x, u, xint: self.MPC_controller.CMPC_Controller(x, u, xint)
+        x_log, u_log = Sim.SimVehicle(x_bar, u_bar, preview, x0, controller)
+        np.savetxt('system/x_log.txt', x_log, fmt='%.6f', delimiter=',', header='x, y, theta, v', comments='')
+        np.savetxt('system/u_log.txt', u_log, fmt='%.6f', delimiter=',', header='acceleration, steering_angle', comments='')
+
+        data_des = np.loadtxt('system/path.txt', delimiter=',',skiprows=1)
+        x_des = data_des[:, 0]
+        y_des = data_des[:, 1]
+        yaw_des = data_des[:, 2]
+        v_des = data_des[:, 3]
+
+        ctrl_des = np.loadtxt('system/controls.txt',delimiter=',', skiprows=1)
+        a_des = ctrl_des[:,0]
+        delta_des = ctrl_des[:,1]
+
+        data_res = np.loadtxt('system/x_log.txt',delimiter=',', skiprows=1)
+        x_res = data_res[:, 0]
+        y_res = data_res[:, 1]
+        yaw_res = data_res[:, 2]
+        v_res = data_res[:, 3]
+
+        ctrl_res = np.loadtxt('system/u_log.txt',delimiter=',', skiprows=1)
+        a_res = ctrl_res[:,0]
+        delta_res = ctrl_res[:,1]
+
+
+        plt.figure(figsize=(5, 5))
+        # plt.plot(x_des, y_des, 'ko-')
+        # plt.plot(x_res, x_res, 'ro-')
+
+        plt.plot(x_des, y_des, 'k-', label = "reference")
+        plt.plot(x_res, y_res, 'r--', label = "vehicle")
+        plt.axis('equal')
+        plt.xlabel('$x$')
+        plt.ylabel('$y$')
+        plt.title('trajectory')
+        plt.legend()
+        plt.grid()
+        plt.savefig('system/trajectory.png')
+        plt.show()
+
+        plt.figure(figsize=(20, 3))
+        plt.plot(yaw_des, 'k-', label = "reference")
+        plt.plot(yaw_res, 'r--', label = "vehicle")
+        plt.title('Orientation')
+        plt.legend()
+        plt.grid()
+        plt.savefig('system/Orientation.png')
+        plt.show()
+
+
+        plt.figure(figsize=(20, 3))
+        plt.plot(v_des, 'k-', label = "reference")
+        plt.plot(v_res, 'r--', label = "vehicle")
+        plt.title('Velocity')
+        plt.legend()
+        plt.grid()
+        plt.savefig('system/Velocity.png')
+        plt.show()
+
+
+        plt.figure(figsize=(20, 3))
+        plt.plot(a_des, 'k-', label = "reference")
+        plt.plot(a_res, 'r--', label = "vehicle")
+        plt.title('Acceleration')
+        plt.legend()
+        plt.grid()
+        plt.savefig('system/Acceleration.png')
+        plt.show()
+
+
+        plt.figure(figsize=(20, 3))
+        plt.plot(delta_des, 'k-', label = "reference")
+        plt.plot(delta_res, 'r--', label = "vehicle")
+        plt.title('Steering Angle')
+        plt.legend()
+        plt.grid()
+        plt.savefig('system/Steering.png')
+        plt.show()
+
+        for i in range(len(x_res)):
+            self.mpc_pub.publish_mpc_path([x_res[i],y_res[i]])
+
+        
         
 
 def main():

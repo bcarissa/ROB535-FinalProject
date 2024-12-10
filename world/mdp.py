@@ -267,8 +267,8 @@ class mdp(Env):
     def generateContinuousPath(self):
         grid_size = self.robot.world.grid_size
         # generated = [False for i in range(len(self.robot.world.path))]
-        startPoint = self.robot.world.path[0]
-        lastEnd = [startPoint[0] * grid_size + grid_size / 2,startPoint[1] * grid_size + grid_size / 2]
+        startPoint = self.robot.world.path[0] # row col
+        lastEnd = [startPoint[1] * grid_size + grid_size / 2,startPoint[0] * grid_size + grid_size / 2] # col row/y x
         idx = 0
         while idx<len(self.robot.world.path):
             if idx+1<len(self.robot.world.path):
@@ -360,7 +360,9 @@ class mdp(Env):
 
         # 添加起始点到目标状态列表
         start_x, start_y = self.contiPath[0]
-        self.mpcTargets.append([start_x, start_y, 0.0, self.velocity])  # 初始速度为恒定速度
+        next_x, next_y = self.contiPath[1]
+        psi = np.arctan2(next_y - start_y, next_x - start_x)
+        self.mpcTargets.append([start_x, start_y, psi, self.velocity])  # 初始速度为恒定速度
 
         # 当前点初始化为起始点
         current_x, current_y = start_x, start_y
@@ -409,8 +411,8 @@ class mdp(Env):
         self.mpcControls.append([0.0, 0.0])  # 最后一段无控制输入变化
 
         # 保存路径和控制输入
-        self.saveMPCPath("path.txt")
-        self.saveMPCControls("controls.txt")
+        self.saveMPCPath("system/path.txt")
+        self.saveMPCControls("system/controls.txt")
 
     def saveMPCPath(self, filename="path.txt"):
         """
