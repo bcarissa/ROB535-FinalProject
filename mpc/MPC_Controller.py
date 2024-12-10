@@ -66,94 +66,91 @@ class MPC_Controller:
         #                    TODO: Implement your code here                         #
         #############################################################################
         
+        # # define the parameters
+        # Q = np.eye(4)  * 1
+        # R = np.eye(2)  * 0.00001
+        # Pt = np.eye(4) * 2 
+        
+        # # define the cost function
+        # P = np.zeros((n_var, n_var))
+        # for k in range(len_ctrl):
+        #     P[k * dim_state:(k+1) * dim_state, k * dim_state:(k+1) * dim_state] = Q
+        #     P[n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl, n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl] = R
+        
+        # P[n_x - dim_state:n_x, n_x - dim_state:n_x] = Pt
+        # P = (P.T + P) / 2
+        # q = np.zeros((n_var, 1))
+        
+        # # define the constraints
+        # A = np.zeros((n_eq, n_var))
+        # b = np.zeros(n_eq)
+        
+        # G = np.zeros((n_ieq, n_var))
+        # ub = np.zeros(n_ieq)
+        # lb = np.zeros(n_ieq)
+        
+        # u_lb = np.array([a_limit[0], delta_limit[0]])
+        # u_ub = np.array([a_limit[1], delta_limit[1]])
+        
+        # for k in range(len_ctrl):
+        #     Jac_A, Jac_B = self.calc_Jacobian(x_bar[k, :], u_bar[k, :], param)
+        #     A[k * dim_state:(k+1) * dim_state,      k * dim_state:(k+1) * dim_state]       = Jac_A # AB[0:dim_state, 0:dim_state]
+        #     A[k * dim_state:(k+1) * dim_state,  (k+1) * dim_state:(k+2) * dim_state]       = -np.eye(dim_state)
+        #     A[k * dim_state:(k+1) * dim_state, n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl]  = Jac_B # AB[0:dim_state, dim_state:]
+            
+        #     G[k * dim_ctrl:(k+1) * dim_ctrl, n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl]    = np.eye(dim_ctrl)
+        #     ub[k * dim_ctrl:(k+1) * dim_ctrl] = u_ub - u_bar[k, :]
+        #     lb[k * dim_ctrl:(k+1) * dim_ctrl] = u_lb - u_bar[k, :]
+
+        # # Define and solve the CVXPY problem.
+        # x = cp.Variable(n_var)
+        # prob = cp.Problem(cp.Minimize((1/2)*cp.quad_form(x, P) + q.T @ x),
+        #                 [
+        #                 G @ x <= ub,
+        #                 lb <= G @ x,
+        #                 A @ x == b,
+        #                 x[0:dim_state] == x0 - x_bar[0, :]
+        #                 ])
+        # prob.solve(verbose=False, max_iter = 10000)
+        # u_act = x.value[n_x:n_x + dim_ctrl] + u_bar[0, :]
+        
+        delta_s = cp.Variable((dim_state, len_state))  # State variables over time
+        delta_u = cp.Variable((dim_ctrl, len_ctrl))    # Control variables over time
+        
         # define the parameters
-        Q = np.eye(4)  * 1
-        R = np.eye(2)  * 0.00001
-        Pt = np.eye(4) * 2 
+        Q = np.array([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ])
+        R = np.eye(2) * 0.00001
+        Pt = np.eye(4) * 2 # Terminal Cost
         
-        # define the cost function
-        P = np.zeros((n_var, n_var))
-        for k in range(len_ctrl):
-            P[k * dim_state:(k+1) * dim_state, k * dim_state:(k+1) * dim_state] = Q
-            P[n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl, n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl] = R
-        
-        P[n_x - dim_state:n_x, n_x - dim_state:n_x] = Pt
-        P = (P.T + P) / 2
-        q = np.zeros((n_var, 1))
-        
-        # define the constraints
-        A = np.zeros((n_eq, n_var))
-        b = np.zeros(n_eq)
-        
-        G = np.zeros((n_ieq, n_var))
-        ub = np.zeros(n_ieq)
-        lb = np.zeros(n_ieq)
-        
-        u_lb = np.array([a_limit[0], delta_limit[0]])
-        u_ub = np.array([a_limit[1], delta_limit[1]])
-        
-        for k in range(len_ctrl):
-            Jac_A, Jac_B = self.calc_Jacobian(x_bar[k, :], u_bar[k, :], param)
-            A[k * dim_state:(k+1) * dim_state,      k * dim_state:(k+1) * dim_state]       = Jac_A # AB[0:dim_state, 0:dim_state]
-            A[k * dim_state:(k+1) * dim_state,  (k+1) * dim_state:(k+2) * dim_state]       = -np.eye(dim_state)
-            A[k * dim_state:(k+1) * dim_state, n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl]  = Jac_B # AB[0:dim_state, dim_state:]
+    # Define the cost function
+        cost = cp.quad_form(delta_s[:, -1] - x_bar[-1], Pt)  # Terminal cost
+        for i in range(len_ctrl):
+            cost += cp.quad_form(delta_s[:, i] - x_bar[i], Q)  # State deviation cost
+            cost += cp.quad_form(delta_u[:, i] - u_bar[i], R)  # Control deviation cost
             
-            G[k * dim_ctrl:(k+1) * dim_ctrl, n_x + k * dim_ctrl:n_x + (k+1) * dim_ctrl]    = np.eye(dim_ctrl)
-            ub[k * dim_ctrl:(k+1) * dim_ctrl] = u_ub - u_bar[k, :]
-            lb[k * dim_ctrl:(k+1) * dim_ctrl] = u_lb - u_bar[k, :]
+        # Define constraints
+        constraints = [delta_s[:, 0] == x0]  # Initial condition
 
-        # Define and solve the CVXPY problem.
-        x = cp.Variable(n_var)
-        prob = cp.Problem(cp.Minimize((1/2)*cp.quad_form(x, P) + q.T @ x),
-                        [
-                        G @ x <= ub,
-                        lb <= G @ x,
-                        A @ x == b,
-                        x[0:dim_state] == x0 - x_bar[0, :]
-                        ])
-        prob.solve(verbose=False, max_iter = 10000)
-        u_act = x.value[n_x:n_x + dim_ctrl] + u_bar[0, :]
-        
-    #     delta_s = cp.Variable((dim_state, len_state))  # State variables over time
-    #     delta_u = cp.Variable((dim_ctrl, len_ctrl))    # Control variables over time
-    #     t = cp.Variable()
-    #     M = cp.Variable((2, 2), symmetric=True)
-        
-    #     # define the parameters
-    #     Q = np.array([
-    #         [1, 0, 0, 0],
-    #         [0, 1, 0, 0],
-    #         [0, 0, 1, 0],
-    #         [0, 0, 0, 1],
-    #     ])
-    #     R = np.eye(2) * 0.00001
-    #     Pt = np.eye(4) * 2 # Terminal Cost
-        
-    # # Define the cost function
-    #     cost = cp.quad_form(delta_s[:, -1] - x_bar[-1], Pt)  # Terminal cost
-    #     for i in range(len_ctrl):
-    #         cost += cp.quad_form(delta_s[:, i] - x_bar[i], Q)  # State deviation cost
-    #         cost += cp.quad_form(delta_u[:, i] - u_bar[i], R)  # Control deviation cost
-            
-    #     # Define constraints
-    #     constraints = [delta_s[:, 0] == x0]  # Initial condition
+        for i in range(len_ctrl):
+            # Get system dynamics matrices A_k, B_k (you need a function to calculate these)
+            A_k, B_k = self.calc_Jacobian(x_bar[i], u_bar[i], param)
 
-    #     for i in range(len_ctrl):
-    #         # Get system dynamics matrices A_k, B_k (you need a function to calculate these)
-    #         A_k, B_k = self.calc_Jacobian(x_bar[i], u_bar[i], param)
+            # Dynamic constraint: x(k+1) = A_k * x(k) + B_k * u(k)
+            constraints += [(delta_s[:, i+1] - x_bar[i+1]) == A_k @ (delta_s[:, i] - x_bar[i]) + B_k @ (delta_u[:, i] - u_bar[i])]
+            # Input constraints: acceleration and steering limits
+            constraints.append(delta_u[0, i] >= a_limit[0])  # Lower bound on acceleration
+            constraints.append(delta_u[0, i] <= a_limit[1])  # Upper bound on acceleration
+            constraints.append(delta_u[1, i] >= delta_limit[0])  # Lower bound on steering angle
+            constraints.append(delta_u[1, i] <= delta_limit[1])  # Upper bound on steering angle
 
-    #         # Dynamic constraint: x(k+1) = A_k * x(k) + B_k * u(k)
-    #         constraints = [M >> 0]
-    #         constraints += [(delta_s[:, i+1] - x_bar[i+1]) == A_k @ (delta_s[:, i] - x_bar[i]) + B_k @ (delta_u[:, i] - u_bar[i])]
-    #         # Input constraints: acceleration and steering limits
-    #         constraints.append(delta_u[0, i] >= a_limit[0])  # Lower bound on acceleration
-    #         constraints.append(delta_u[0, i] <= a_limit[1])  # Upper bound on acceleration
-    #         constraints.append(delta_u[1, i] >= delta_limit[0])  # Lower bound on steering angle
-    #         constraints.append(delta_u[1, i] <= delta_limit[1])  # Upper bound on steering angle
-
-    #     prob = cp.Problem(cp.Minimize(cost), constraints)
-    #     prob.solve(verbose=False, max_iter=10000)
-    #     u_act = delta_u[:, 0].value
+        prob = cp.Problem(cp.Minimize(cost), constraints)
+        prob.solve(verbose=False, max_iter=10000)
+        u_act = delta_u[:, 0].value
         #############################################################################
         #                            END OF YOUR CODE                               #
         #############################################################################
