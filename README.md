@@ -9,7 +9,7 @@
   Start and End Point Selection: Select starting and ending positions interactively. 
   Visualization: Render the grid world with visual feedback using pygame. 
   Obstacle Hollowing: Automatically generate hollow obstacles from binary maps using morphological erosion. 
-## Key Methods
+### Key Methods
 
 ```
 add_fence(grid_y, grid_x)
